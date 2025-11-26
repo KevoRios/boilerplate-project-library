@@ -1,47 +1,106 @@
-/*
-*
-*
-*       Complete the API routing below
-*       
-*       
-*/
-
 'use strict';
 
 module.exports = function (app) {
-
-  app.route('/api/books')
-    .get(function (req, res){
-      //response will be array of book objects
-      //json res format: [{"_id": bookid, "title": book_title, "commentcount": num_of_comments },...]
-    })
-    
-    .post(function (req, res){
-      let title = req.body.title;
-      //response will contain new book object including atleast _id and title
-    })
-    
-    .delete(function(req, res){
-      //if successful response will be 'complete delete successful'
-    });
-
-
-
-  app.route('/api/books/:id')
-    .get(function (req, res){
-      let bookid = req.params.id;
-      //json res format: {"_id": bookid, "title": book_title, "comments": [comment,comment,...]}
-    })
-    
-    .post(function(req, res){
-      let bookid = req.params.id;
-      let comment = req.body.comment;
-      //json res format same as .get
-    })
-    
-    .delete(function(req, res){
-      let bookid = req.params.id;
-      //if successful response will be 'delete successful'
-    });
   
+  // "Base de datos" en memoria para pasar los tests
+  let books = [];
+
+  // /api/books
+  app.route('/api/books')
+    
+    // GET: listar todos los libros
+    .get(function (req, res) {
+      const response = books.map(b => ({
+        _id: b._id,
+        title: b.title,
+        commentcount: b.comments.length
+      }));
+      res.json(response);
+    })
+
+    // POST: crear libro
+    .post(function (req, res) {
+      const { title } = req.body;
+
+      if (!title) {
+        return res.send('missing required field title');
+      }
+
+      const newBook = {
+        _id: Math.random().toString(16).slice(2),
+        title,
+        comments: []
+      };
+
+      books.push(newBook);
+
+      res.json({
+        _id: newBook._id,
+        title: newBook.title
+      });
+    })
+
+    // DELETE: borrar todos los libros
+    .delete(function (req, res) {
+      books = [];
+      res.send('complete delete successful');
+    });
+
+  // /api/books/:id
+  app.route('/api/books/:id')
+
+    // GET: obtener libro por id
+    .get(function (req, res) {
+      const bookid = req.params.id;
+      const book = books.find(b => b._id === bookid);
+
+      if (!book) {
+        return res.send('no book exists');
+      }
+
+      res.json({
+        _id: book._id,
+        title: book.title,
+        comments: book.comments
+      });
+    })
+
+    // POST: agregar comentario
+    .post(function (req, res) {
+      const bookid = req.params.id;
+      const { comment } = req.body;
+
+      if (!comment) {
+        return res.send('missing required field comment');
+      }
+
+      const book = books.find(b => b._id === bookid);
+
+      if (!book) {
+        return res.send('no book exists');
+      }
+
+      book.comments.push(comment);
+
+      res.json({
+        _id: book._id,
+        title: book.title,
+        comments: book.comments
+      });
+    })
+
+    // DELETE: borrar un libro
+    .delete(function (req, res) {
+      const bookid = req.params.id;
+      const index = books.findIndex(b => b._id === bookid);
+
+      if (index === -1) {
+        return res.send('no book exists');
+      }
+
+      books.splice(index, 1);
+      res.send('delete successful');
+    });
+
 };
+
